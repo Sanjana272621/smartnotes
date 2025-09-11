@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 
-// Fake data (swap with real fetch later)
 const sessions = [
   { id: "c_101", title: "Explain CNNs like I’m 12", lastMsg: "A CNN learns filters…", updatedAt: "2025-09-11" },
   { id: "c_102", title: "Revise: OS Scheduling vs Deadlocks", lastMsg: "Preemptive vs non-preemptive…", updatedAt: "2025-09-10" },
