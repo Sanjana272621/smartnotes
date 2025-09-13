@@ -1,62 +1,50 @@
-import Link from "next/link"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-// Fake data (swap with real fetch later)
-const notes = [
-  { id: "doc_1", title: "Machine Learning Basics", pages: 28, createdAt: "2025-09-10" },
-  { id: "doc_2", title: "Operating Systems — Scheduling", pages: 17, createdAt: "2025-09-09" },
-  { id: "doc_3", title: "DBMS Indexing Cheatsheet", pages: 9,  createdAt: "2025-09-07" },
-]
+export default function NotesUploadPage() {
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
-export default function NotesPage() {
+  async function onUpload() {
+    try {
+      if (!file) return;
+      setBusy(true);
+
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+
+      console.log("UPLOAD RESP:", res.status, data); // <— see what came back
+
+      if (!res.ok || !data?.pdfId) {
+        alert(data?.error || "Upload failed: missing pdfId");
+        setBusy(false);
+        return;
+      }
+
+      // Use encodeURIComponent in case ids have special chars
+      router.push(`/notes/${encodeURIComponent(data.pdfId)}`);
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || "Unexpected error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <main className="mx-auto max-w-4xl p-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">My Notes</h1>
-        <div className="flex items-center gap-2">
-          <Input placeholder="Search notes…" className="w-56" />
-          <Link href="/notes/new">
-            <Button>Upload PDF</Button>
-          </Link>
-        </div>
-      </div>
-
-      <Separator className="mb-5" />
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {notes.map(n => (
-          <Link key={n.id} href={`/notes/${n.id}`}>
-            <Card className="transition hover:shadow-md">
-              <CardHeader>
-                <CardTitle className="line-clamp-1">{n.title}</CardTitle>
-                <CardDescription>
-                  <span className="mr-2 text-xs text-muted-foreground">
-                    {new Date(n.createdAt).toLocaleDateString()}
-                  </span>
-                  <Badge variant="secondary">{n.pages} pages</Badge>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Topic breakdown + MCQs generated per chunk.
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-
-      {notes.length === 0 && (
-        <Card className="mt-6">
-          <CardContent className="p-6 text-sm text-muted-foreground">
-            No notes yet. Click <strong>Upload PDF</strong> to get started.
-          </CardContent>
-        </Card>
-      )}
-    </main>
-  )
+    <div className="max-w-lg mx-auto p-6 flex flex-col gap-4">
+      <h1 className="text-2xl font-semibold">Upload a PDF to Generate Notes</h1>
+      <Input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+      <Button onClick={onUpload} disabled={!file || busy}>
+        {busy ? "Processing..." : "Upload"}
+      </Button>
+    </div>
+  );
 }
